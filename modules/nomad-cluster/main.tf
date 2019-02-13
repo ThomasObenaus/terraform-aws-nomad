@@ -13,7 +13,7 @@ terraform {
 resource "aws_autoscaling_group" "autoscaling_group" {
   launch_configuration = "${aws_launch_configuration.launch_configuration.name}"
 
-  name                = "${var.asg_name}"
+  name                = "${var.asg_name}-${aws_launch_configuration.launch_configuration.name}"
   availability_zones  = ["${var.availability_zones}"]
   vpc_zone_identifier = ["${var.subnet_ids}"]
 
@@ -25,6 +25,17 @@ resource "aws_autoscaling_group" "autoscaling_group" {
   health_check_type         = "${var.health_check_type}"
   health_check_grace_period = "${var.health_check_grace_period}"
   wait_for_capacity_timeout = "${var.wait_for_capacity_timeout}"
+
+  # Important note: whenever using a launch configuration with an auto scaling group, you must set
+  # create_before_destroy = true. However, as soon as you set create_before_destroy = true in one resource, you must
+  # also set it in every resource that it depends on, or you'll get an error about cyclic dependencies (especially when
+  # removing resources). For more info, see:
+  #
+  # https://www.terraform.io/docs/providers/aws/r/launch_configuration.html
+  # https://terraform.io/docs/configuration/resources.html
+  lifecycle {
+    create_before_destroy = true
+  }
 
   tags = [
     {
